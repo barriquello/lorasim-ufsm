@@ -1,0 +1,1 @@
+python loraSim.py 130 30000 20 4 60000 1
