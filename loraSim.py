@@ -1,7 +1,18 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+
 """
- LoRaSim: simulate collisions in LoRa
+	Updated version based in the most recent release of the LoraSim merged with some functions implemented for the previous versions
+	
+	Changelog:
+		09/28/2017 - Simulation now saves 2 archives in differents formats (.dat and .txt)
+				   - Added the "--print-of" parameter for simulation without log enabled
+				   - Tested the simulation with and without the log enabled
+				   
+		09/26/2017 - Merged the most recent code avaliable for the LoraSim with some functions previously implemented
+"""
+"""
+ LoRaSim 0.2.1: simulate collisions in LoRa
  Copyright © 2016 Thiemo Voigt <thiemo@sics.se> and Martin Bor <m.bor@lancaster.ac.uk>
 
  This work is licensed under the Creative Commons Attribution 4.0
@@ -11,9 +22,10 @@
  Do LoRa Low-Power Wide-Area Networks Scale? Martin Bor, Utz Roedig, Thiemo Voigt
  and Juan Alonso, MSWiM '16, http://dx.doi.org/10.1145/2988287.2989163
 
- $Date: 2016-10-17 13:23:52 +0100 (Mon, 17 Oct 2016) $
- $Revision: 218 $
+ $Date: 2017-05-12 19:16:16 +0100 (Fri, 12 May 2017) $
+ $Revision: 334 $
 """
+
 """
  SYNOPSIS:
    ./loraDir.py <nodes> <avgsend> <experiment> <simtime> [collision]
@@ -58,7 +70,7 @@ import os
 # turn on/off graphics
 graphics = 0
 
-# do the full collision check   
+# do the full collision check
 full_collision = False
 
 # experiments:
@@ -67,10 +79,6 @@ full_collision = False
 # 2: with shortest packets, still aloha-style
 # 3: with shortest possible packets depending on distance
 
-Link_Loss_dB = [161.6,160.7,156.6,158.5,158,154.8,156.8,152.2,154.9,153.5,151.5,151.6,152.1,152,151.9,151.8,151.4,151.2,150.4,146.8,147.3,149.8,149.3,147.8,149.2,144.4,145.9,145.2,142.8,146.4,144.5,142.5,143.2,142.8,144,145,145,144,144.8,143.4,141.1,141.4,141.9,142.6,141.6,140.1,140.9,139,140.7,140.9,139.4,139.9,140.1,138.5,140.5,138,137.1,139.2,136,139,137.8,137.9,135.9,137.3,137.4,136.1,138.1,137.1,136.7,136.2,135.1,134.8,134.3,134.4,132.9,134.1,134.9,133.9,134.2,133,133.9,133.8,130,133.6,133.1,130.5,131,132.1,132.1,131.9,130.3,132.1,129.6,129.3,129.1,128.9,128.6,129.3,128.8,128.8,124.5,127.2,124.8,126.1,125.1,124.6,122,124.4,124.4,122.8,123.4,123.1,120.9,123.4,118.1,119.1,118.5,116.9,117.3,117.6,108.7,105.3,108.2,108.8,105.6,105,103.7,100.9,99.1,96.6,96.4,95,93.9,92.3,91.8];
-Ranges_km = [29.805,38.984,42.135,16.112,29.818,40.725,32.422,45.478,29.405,19.82,44.188,47.134,15.782,17.877,32.231,36.826,36.369,39.783,35.485,37.373,35.435,24.985,15.114,19.521,34.549,32.147,31.781,31.548,19.92,29.925,29.726,19.355,29.982,24.539,16.349,19.372,23.144,22.132,28.969,21.459,26.864,24.157,17.788,27.333,24.005,18.994,30.22,20.058,30.107,24.813,26.56,21.235,25.99,31.827,22.924,12.387,29.431,23.915,23.247,10.991,30.618,28.128,21.746,11.563,24.861,24.364,7.835,16.218,17.297,21.977,24.996,23.474,25.047,17.605,18.33,26.4,27.628,10.491,16.53,14.648,27.358,25.174,20.863,21.819,21.714,7.708,16.132,21.54,20.059,25.323,7.916,24.444,21.149,10.085,22.038,8.155,13.963,11.696,25.251,10.982,15.412,12.889,12.6,15.767,9.755,13.368,12.301,21.096,7.53,19.231,18.436,11.152,6.428,10.614,4.633,6.369,14.583,12.02,6.012,7.178,5.26,6.649,4.929,4.806,4.615,3.985,2.883,2.346,1.768,1.721,1.463,1.284,1.073,1.01];
-
-max_n = len(Link_Loss_dB);
 
 
 # this is an array with measured values for sensitivity
@@ -82,6 +90,12 @@ sf10 = np.array([10,-132.75,-130.25,-128.75])
 sf11 = np.array([11,-134.5,-132.75,-128.75])
 sf12 = np.array([12,-133.25,-132.25,-132.25])
 
+# Signal attenuation parameters
+Link_Loss_dB = [161.6,160.7,156.6,158.5,158,154.8,156.8,152.2,154.9,153.5,151.5,151.6,152.1,152,151.9,151.8,151.4,151.2,150.4,146.8,147.3,149.8,149.3,147.8,149.2,144.4,145.9,145.2,142.8,146.4,144.5,142.5,143.2,142.8,144,145,145,144,144.8,143.4,141.1,141.4,141.9,142.6,141.6,140.1,140.9,139,140.7,140.9,139.4,139.9,140.1,138.5,140.5,138,137.1,139.2,136,139,137.8,137.9,135.9,137.3,137.4,136.1,138.1,137.1,136.7,136.2,135.1,134.8,134.3,134.4,132.9,134.1,134.9,133.9,134.2,133,133.9,133.8,130,133.6,133.1,130.5,131,132.1,132.1,131.9,130.3,132.1,129.6,129.3,129.1,128.9,128.6,129.3,128.8,128.8,124.5,127.2,124.8,126.1,125.1,124.6,122,124.4,124.4,122.8,123.4,123.1,120.9,123.4,118.1,119.1,118.5,116.9,117.3,117.6,108.7,105.3,108.2,108.8,105.6,105,103.7,100.9,99.1,96.6,96.4,95,93.9,92.3,91.8];
+Ranges_km = [29.805,38.984,42.135,16.112,29.818,40.725,32.422,45.478,29.405,19.82,44.188,47.134,15.782,17.877,32.231,36.826,36.369,39.783,35.485,37.373,35.435,24.985,15.114,19.521,34.549,32.147,31.781,31.548,19.92,29.925,29.726,19.355,29.982,24.539,16.349,19.372,23.144,22.132,28.969,21.459,26.864,24.157,17.788,27.333,24.005,18.994,30.22,20.058,30.107,24.813,26.56,21.235,25.99,31.827,22.924,12.387,29.431,23.915,23.247,10.991,30.618,28.128,21.746,11.563,24.861,24.364,7.835,16.218,17.297,21.977,24.996,23.474,25.047,17.605,18.33,26.4,27.628,10.491,16.53,14.648,27.358,25.174,20.863,21.819,21.714,7.708,16.132,21.54,20.059,25.323,7.916,24.444,21.149,10.085,22.038,8.155,13.963,11.696,25.251,10.982,15.412,12.889,12.6,15.767,9.755,13.368,12.301,21.096,7.53,19.231,18.436,11.152,6.428,10.614,4.633,6.369,14.583,12.02,6.012,7.178,5.26,6.649,4.929,4.806,4.615,3.985,2.883,2.346,1.768,1.721,1.463,1.284,1.073,1.01];
+
+max_n = len(Link_Loss_dB);
+
 # sf6 = np.array([7,-121])
 # sf7 = np.array([7,-124,-124.25,-120.75])
 # sf8 = np.array([8,-127,-126.75,-124.0])
@@ -90,7 +104,7 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
 # sf11 = np.array([11,-135,-132.75,-128.75])
 # sf12 = np.array([12,-137,-132.25,-132.25])
 
-#cochannel rejection
+# cochannel rejection
 sf7d = np.array([7, -6, 16, 18, 19, 19, 20])
 sf8d = np.array([8, 24, -6, 20, 22, 22, 22])
 sf9d = np.array([9, 27, 27, -6, 23, 25, 25])
@@ -105,6 +119,7 @@ sf12d = np.array([12, 36, 36, 36, 36, 36, -6])
 # conditions for collions:
 #     1. same sf
 #     2. frequency, see function below (Martins email, not implementet yet):
+
 def checkcollision(packet):
     col = 0 # flag needed since there might be several collisions for packet
     processing = 0
@@ -112,44 +127,42 @@ def checkcollision(packet):
         if packetsAtBS[i].packet.processed == 1:
             processing = processing + 1
     if (processing > maxBSReceives):
-        print "too long:", len(packetsAtBS)
-        packet.processed = 0
+		if printoff:
+			print "too long:", len(packetsAtBS)
+		packet.processed = 0
     else:
         packet.processed = 1
 
     if packetsAtBS:
-        print "CHECK node {} (sf:{} bw:{} freq:{:.6e}) others: {}".format(
+        if printoff:
+		print "CHECK node {} (sf:{} bw:{} freq:{:.6e}) others: {}".format(
              packet.nodeid, packet.sf, packet.bw, packet.freq,
              len(packetsAtBS))
         for other in packetsAtBS:
             if other.nodeid != packet.nodeid:
-               print ">> node {} (sf:{} bw:{} freq:{:.6e})".format(
-                   other.nodeid, other.packet.sf, other.packet.bw, other.packet.freq)
+               if printoff:
+			      print ">> node {} (sf:{} bw:{} freq:{:.6e})".format(
+                      other.nodeid, other.packet.sf, other.packet.bw, other.packet.freq)
                # simple collision
-               if frequencyCollision(packet, other.packet):
-                   if sfCollision(packet, other.packet):
-                       if full_collision:
-                           if timingCollision(packet, other.packet):
+               if frequencyCollision(packet, other.packet) \
+                   and sfCollision(packet, other.packet):
+                   if full_collision:
+                       if timingCollision(packet, other.packet):
                            # check who collides in the power domain
-                               c = powerCollision(packet, other.packet)
+                           c = powerCollision(packet, other.packet)
                            # mark all the collided packets
                            # either this one, the other one, or both
-                               for p in c:
-                                   p.collided = 1
-                           else:
+                           for p in c:
+                               p.collided = 1
+                               if p == packet:
+                                   col = 1
+                       else:
                            # no timing collision, all fine
-                               pass
-                       else:
-                           packet.collided = 1
-                           other.packet.collided = 1  # other also got lost, if it wasn't lost already
-                           col = 1
+                           pass
                    else:
-                       if timingCollision(packet, other.packet):
-                           if powersfCollision(packet, other.packet):
-                               packet.collided = 1
-                               col = 1
-                       else:
-                            pass                                   
+                       packet.collided = 1
+                       other.packet.collided = 1  # other also got lost, if it wasn't lost already
+                       col = 1
         return col
     return 0
 
@@ -161,14 +174,17 @@ def checkcollision(packet):
 #        |f1-f2| <= 30 kHz if f1 or f2 has bw 125
 def frequencyCollision(p1,p2):
     if (abs(p1.freq-p2.freq)<=120 and (p1.bw==500 or p2.freq==500)):
-        print "frequency coll 500"
+        if printoff:
+		   print "frequency coll 500"
         return True
     elif (abs(p1.freq-p2.freq)<=60 and (p1.bw==250 or p2.freq==250)):
-        print "frequency coll 250"
+        if printoff:
+		   print "frequency coll 250"
         return True
     else:
         if (abs(p1.freq-p2.freq)<=30):
-            print "frequency coll 125"
+            if printoff:
+			   print "frequency coll 125"
             return True
         #else:
     print "no frequency coll"
@@ -176,25 +192,31 @@ def frequencyCollision(p1,p2):
 
 def sfCollision(p1, p2):
     if p1.sf == p2.sf:
-        print "collision sf node {} and node {}".format(p1.nodeid, p2.nodeid)
+        if printoff:
+		    print "collision sf node {} and node {}".format(p1.nodeid, p2.nodeid)
         # p2 may have been lost too, will be marked by other checks
         return True
-    print "no sf collision"
+    if printoff:
+	    print "no sf collision"
     return False
 
 def powerCollision(p1, p2):
     powerThreshold = 6 # dB
-    print "pwr: node {0.nodeid} {0.rssi:3.2f} dBm node {1.nodeid} {1.rssi:3.2f} dBm; diff {2:3.2f} dBm".format(p1, p2, round(p1.rssi - p2.rssi,2))
+    if printoff:
+	    print "pwr: node {0.nodeid} {0.rssi:3.2f} dBm node {1.nodeid} {1.rssi:3.2f} dBm; diff {2:3.2f} dBm".format(p1, p2, round(p1.rssi - p2.rssi,2))
     if abs(p1.rssi - p2.rssi) < powerThreshold:
-        print "collision pwr both node {} and node {}".format(p1.nodeid, p2.nodeid)
+        if printoff:
+		    print "collision pwr both node {} and node {}".format(p1.nodeid, p2.nodeid)
         # packets are too close to each other, both collide
         # return both packets as casualties
         return (p1, p2)
     elif p1.rssi - p2.rssi < powerThreshold:
         # p2 overpowered p1, return p1 as casualty
-        print "collision pwr node {} overpowered node {}".format(p2.nodeid, p1.nodeid)
+        if printoff:
+		    print "collision pwr node {} overpowered node {}".format(p2.nodeid, p1.nodeid)
         return (p1,)
-    print "p1 wins, p2 lost"
+    if printoff:
+	    print "p1 wins, p2 lost"
     # p2 was the weaker packet, return it as a casualty
     return (p2,)
 
@@ -212,27 +234,32 @@ def timingCollision(p1, p2):
     # check whether p2 ends in p1's critical section
     p2_end = p2.addTime + p2.rectime
     p1_cs = env.now + Tpreamb
-    print "collision timing node {} ({},{},{}) node {} ({},{})".format(
-        p1.nodeid, env.now - env.now, p1_cs - env.now, p1.rectime,
-        p2.nodeid, p2.addTime - env.now, p2_end - env.now
-    )
+    if printoff:
+	    print "collision timing node {} ({},{},{}) node {} ({},{})".format(
+            p1.nodeid, env.now - env.now, p1_cs - env.now, p1.rectime,
+            p2.nodeid, p2.addTime - env.now, p2_end - env.now
+        )
     if p1_cs < p2_end:
         # p1 collided with p2 and lost
-        print "not late enough"
+        if printoff:
+		   print "not late enough"
         return True
-    print "saved by the preamble"
+    if printoff:
+		print "saved by the preamble"
     return False
-
+	
 # sf co-interference protection
 def powersfCollision(p1, p2):
     # is SF protection enough ?
     if((p1.rssi-p2.rssi) < - interf[p1.sf-7,p2.sf-6]):
-        print "collision pwr node {}, sf {} overpowered node {}, sf {}".format(p2.nodeid, p2.sf, p1.nodeid, p1.sf)
+        if printoff:
+			print "collision pwr node {}, sf {} overpowered node {}, sf {}".format(p2.nodeid, p2.sf, p1.nodeid, p1.sf)
         return True
     else:
-        print "saved by SF protection" 
-        return False    
-
+        if printoff:
+			print "saved by SF protection" 
+        return False 
+		
 # this function computes the airtime of a packet
 # according to LoraDesignGuide_STD.pdf
 #
@@ -250,7 +277,8 @@ def airtime(sf,cr,pl,bw):
 
     Tsym = (2.0**sf)/bw
     Tpream = (Npream + 4.25)*Tsym
-    print "sf", sf, " cr", cr, "pl", pl, "bw", bw
+    if printoff:
+		print "sf", sf, " cr", cr, "pl", pl, "bw", bw
     payloadSymbNB = 8 + max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)/(4.0*(sf-2*DE)))*(cr+4),0)
     Tpayload = payloadSymbNB * Tsym
     return Tpream + Tpayload
@@ -268,17 +296,37 @@ class myNode():
 
         # this is very complex prodecure for placing nodes
         # and ensure minimum distance between each pair of nodes
+        found = 0
+        rounds = 0
         global nodes
-        maxDist  = Ranges_km[nodeid]
-        a = random.random()
-        posx = maxDist*math.cos(2*math.pi*a)+bsx
-        posy = maxDist*math.sin(2*math.pi*a)+bsy
-        self.x = posx
-        self.y = posy
-        
-        # take distance from vector
+        while (found == 0 and rounds < 100):
+            a = random.random()
+            b = random.random()
+            if b<a:
+                a,b = b,a
+            posx = b*maxDist*math.cos(2*math.pi*a/b)+bsx
+            posy = b*maxDist*math.sin(2*math.pi*a/b)+bsy
+            if len(nodes) > 0:
+                for index, n in enumerate(nodes):
+                    dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
+                    if dist >= 10:
+                        found = 1
+                        self.x = posx
+                        self.y = posy
+                    else:
+                        rounds = rounds + 1
+                        if rounds == 100:
+                            print "could not place new node, giving up"
+                            exit(-1)
+            else:
+                if printoff:
+	   			   print "first node"
+                self.x = posx
+                self.y = posy
+                found = 1
         self.dist = np.sqrt((self.x-bsx)*(self.x-bsx)+(self.y-bsy)*(self.y-bsy))
-        print('node %d' %nodeid, "x", self.x, "y", self.y, "dist: ", self.dist)
+        if printoff:
+			print('node %d' %nodeid, "x", self.x, "y", self.y, "dist: ", self.dist)
 
         self.packet = myPacket(self.nodeid, packetlen, self.dist)
         self.sent = 0
@@ -334,20 +382,21 @@ class myPacket():
         Prx = self.txpow  ## zero path loss by default
 
         # log-shadow
-        #Lpl = Lpld0 + 10*gamma*math.log(distance/d0)
-        Lpl = Link_Loss_dB[nodeid]
-        print "Lpl:", Lpl
+        Lpl = Lpld0 + 10*gamma*math.log10(distance/d0)
+        if printoff:
+			print "Lpl:", Lpl
         Prx = self.txpow - GL - Lpl
 
-        if (experiment == 3) or (experiment == 4) or (experiment == 5):
+        if (experiment == 3) or (experiment == 5):
             minairtime = 9999
             minsf = 0
             minbw = 0
 
-            print "Prx:", Prx
+            if printoff:
+				print "Prx:", Prx
 
             for i in range(0,6):
-                for j in range(1,2):
+                for j in range(1,4):
                     if (sensi[i,j] < Prx):
                         self.sf = int(sensi[i,0])
                         if j==1:
@@ -363,9 +412,11 @@ class myPacket():
                             minbw = self.bw
                             minsensi = sensi[i, j]
             if (minairtime == 9999):
-                print "does not reach base station"
+                if printoff:
+					print "does not reach base station"
                 exit(-1)
-            print "best sf:", minsf, " best bw: ", minbw, "best airtime:", minairtime
+            if printoff:
+				print "best sf:", minsf, " best bw: ", minbw, "best airtime:", minairtime
             self.rectime = minairtime
             self.sf = minsf
             self.bw = minbw
@@ -375,7 +426,8 @@ class myPacket():
                 # reduce the txpower if there's room left
                 self.txpow = max(2, self.txpow - math.floor(Prx - minsensi))
                 Prx = self.txpow - GL - Lpl
-                print 'minsesi {} best txpow {}'.format(minsensi, self.txpow)
+                if printoff:
+					print 'minsesi {} best txpow {}'.format(minsensi, self.txpow)
 
         # transmission range, needs update XXX
         self.transRange = 150
@@ -393,10 +445,13 @@ class myPacket():
         else:
             self.freq = 860000000
 
-        print "frequency" ,self.freq, "symTime ", self.symTime
-        print "bw", self.bw, "sf", self.sf, "cr", self.cr, "rssi", self.rssi
-        self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
-        print "rectime node ", self.nodeid, "  ", self.rectime
+	if printoff:
+         print "frequency" ,self.freq, "symTime ", self.symTime
+         print "bw", self.bw, "sf", self.sf, "cr", self.cr, "rssi", self.rssi
+        
+	self.rectime = airtime(self.sf,self.cr,self.pl,self.bw)
+	if printoff:
+		print "rectime node ", self.nodeid, "  ", self.rectime
         # denote if packet is collided
         self.collided = 0
         self.processed = 0
@@ -419,7 +474,8 @@ def transmit(env,node):
         else:
             sensitivity = sensi[node.packet.sf - 7, [125,250,500].index(node.packet.bw) + 1]
             if node.packet.rssi < sensitivity:
-                print "node {}: packet will be lost".format(node.nodeid)
+                if printoff:
+					print "node {}: packet will be lost".format(node.nodeid)
                 node.packet.lost = True
             else:
                 node.packet.lost = False
@@ -468,6 +524,10 @@ if len(sys.argv) >= 5:
     simtime = int(sys.argv[5])
     if len(sys.argv) > 6:
         full_collision = bool(int(sys.argv[6]))
+	if (len(sys.argv) > 7 and str(sys.argv[7]) == "--print-off"):
+		printoff = False
+	else:
+		printoff = True
     print "Nodes:", nrNodes
     print "AvgSendTime (exp. distributed):",avgSendTime
     print "PayloadSize (B):",payloadSize
@@ -511,11 +571,12 @@ GL = -15
 
 sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])
 interf = np.array([sf7d,sf8d,sf9d,sf10d,sf11d,sf12d])
+
 if experiment in [0,1,4]:
     minsensi = sensi[5,2]  # 5th row is SF12, 2nd column is BW125
 elif experiment == 2:
     minsensi = -112.0   # no experiments, so value from datasheet
-elif experiment == 3:
+elif experiment in [3,5]:
     minsensi = np.amin(sensi) ## Experiment 3 can use any setting, so take minimum
 Lpl = Ptx - minsensi
 print "amin", minsensi, "Lpl", Lpl
@@ -544,6 +605,8 @@ for i in range(0,nrNodes):
     node = myNode(i,bsId, avgSendTime,payloadSize)
     nodes.append(node)
     env.process(transmit(env,node))
+
+# Stoped here
 
 #prepare show
 if (graphics == 1):
@@ -576,6 +639,12 @@ print "received packets: ", nrReceived
 print "processed packets: ", nrProcessed
 print "lost packets: ", nrLost
 
+if printoff:
+	logstate = "enabled"
+else:
+	logstate = "disabled"
+print "log: ", logstate
+
 # data extraction rate
 der = (sent-nrCollisions)/float(sent)
 print "DER:", der
@@ -584,19 +653,32 @@ print "DER method 2:", der
 
 # this can be done to keep graphics visible
 if (graphics == 1):
-    sys.stdin.read()
+    raw_input('Press Enter to continue ...')
 
 # save experiment data into a dat file that can be read by e.g. gnuplot
 # name of file would be:  exp0.dat for experiment 0
-fname = "exp-sendtime" + str(experiment) + ".txt"
+fname = "exp" + str(experiment) + ".dat"
 print fname
 if os.path.isfile(fname):
-    res = "\n" + str(avgSendTime) + "," + str(payloadSize) + "," + str(nrCollisions) + ","  + str(sent)
+    res = "\n" + str(nrNodes) + " " + str(nrCollisions) + " "  + str(sent) + " " + str(energy)
 else:
-    res = "%#simTime nrNodes TxPower\n" + str(simtime) + "," + str(nrNodes) + "," + str(Ptx) + ", 0 \n" + "%#SendTime PayloadSize nrCollisions nrTransmissions\n" + str(avgSendTime) + "," + str(payloadSize) + "," + str(nrCollisions) + ","  + str(sent)
+    res = "#nrNodes nrCollisions nrTransmissions OverallEnergy\n" + str(nrNodes) + " " + str(nrCollisions) + " "  + str(sent) + " " + str(energy)
 with open(fname, "a") as myfile:
     myfile.write(res)
 myfile.close()
+
+# save experiment data into a txt file that can be read by any text reader
+# name of the file would be: exp-sendtime0.txt for experiment 0
+
+fname1 = "exp-sendtime" + str(experiment) + ".txt"
+print fname1
+if os.path.isfile(fname1):
+	res1 = "\n" + str(avgSendTime) + "," + str(simtime) + "," + str(nrNodes) + "," + str(payloadSize) + "," + str(nrCollisions) + ","  + str(sent)
+else:
+	 res1 = "%#simTime nrNodes TxPower\n" + str(simtime) + "," + str(nrNodes) + "," + str(Ptx) + ", 0 \n" + "%#SendTime SimTime nrNodes PayloadSize nrCollisions nrTransmissions\n" + str(avgSendTime) + "," + str(payloadSize) + "," + str(nrCollisions) + ","  + str(sent)
+with open (fname1, "a") as myfile1:
+	myfile1.write(res1)
+myfile1.close()
 
 # with open('nodes.txt','w') as nfile:
 #     for n in nodes:
