@@ -5,11 +5,12 @@
 	Updated version based in the most recent release of the LoraSim merged with some functions implemented for the previous versions
 	
 	Changelog:
-		09/28/2017 - Simulation now saves 2 archives in differents formats (.dat and .txt)
+		09/28/2017 - Simulation now saves 2 archives in different formats (.dat and .txt)
 				   - Added the "--print-of" parameter for simulation without log enabled
+				   - Added the "--graph-on" parameter for drawing the graphics of the simulation
 				   - Tested the simulation with and without the log enabled
 				   
-		09/26/2017 - Merged the most recent code avaliable for the LoraSim with some functions previously implemented
+		09/26/2017 - Merged the most recent code available for the LoraSim with some functions previously implemented
 """
 """
  LoRaSim 0.2.1: simulate collisions in LoRa
@@ -69,6 +70,7 @@ import os
 
 # turn on/off graphics
 graphics = 0
+printoff = True
 
 # do the full collision check
 full_collision = False
@@ -523,11 +525,25 @@ if len(sys.argv) >= 5:
     experiment = int(sys.argv[4])
     simtime = int(sys.argv[5])
     if len(sys.argv) > 6:
-        full_collision = bool(int(sys.argv[6]))
-	if (len(sys.argv) > 7 and str(sys.argv[7]) == "--print-off"):
-		printoff = False
-	else:
-		printoff = True
+		if(str(sys.argv[6]) == "--print-off"):
+			printoff = False
+		elif(str(sys.argv[6]) == "--graph-on"):
+			graphics = 1
+		else:
+			full_collision = bool(int(sys.argv[6]))
+			
+    if (len(sys.argv) > 7):
+		if(str(sys.argv[7]) == "--print-off"):
+			printoff = False
+		elif(str(sys.argv[7]) == "--graph-on"):
+			graphics = 1
+	
+    if (len(sys.argv) > 8):
+	    if(str(sys.argv[8]) == "--print-off"):
+			printoff = False
+	    elif(str(sys.argv[8]) == "--graph-on"):
+			graphics = 1
+			
     print "Nodes:", nrNodes
     print "AvgSendTime (exp. distributed):",avgSendTime
     print "PayloadSize (B):",payloadSize
